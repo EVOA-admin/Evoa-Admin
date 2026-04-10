@@ -19,9 +19,7 @@ export default function BlogList() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
 
-  useEffect(() => {
-    loadBlogs();
-  }, []);
+  useEffect(() => { loadBlogs(); }, []);
 
   async function loadBlogs() {
     try {
@@ -80,7 +78,7 @@ export default function BlogList() {
           <p className="page-subtitle">Manage all blog posts</p>
         </div>
         <Link to="/blogs/create" className="btn btn-primary">
-          <RiAddLine /> New Blog
+          <RiAddLine /> <span className="btn-label">New Blog</span>
         </Link>
       </div>
 
@@ -88,7 +86,7 @@ export default function BlogList() {
 
       {loading ? (
         <div className="table-skeleton">
-          {[...Array(5)].map((_, i) => (
+          {[...Array(4)].map((_, i) => (
             <div key={i} className="skeleton skeleton-row" />
           ))}
         </div>
@@ -100,60 +98,101 @@ export default function BlogList() {
           <Link to="/blogs/create" className="btn btn-primary">Create Blog</Link>
         </div>
       ) : (
-        <div className="table-wrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Status</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {blogs.map(blog => (
-                <tr key={blog.id}>
-                  <td>
-                    <div className="blog-title-cell">{blog.title}</div>
-                    <div className="blog-author-cell">{blog.author}</div>
-                  </td>
-                  <td>
-                    <span className="category-badge">{blog.category || '—'}</span>
-                  </td>
-                  <td>
-                    <span className={`status-badge status-${blog.status}`}>
-                      {blog.status}
-                    </span>
-                  </td>
-                  <td className="date-cell">{formatDate(blog.created_at)}</td>
-                  <td>
-                    <div className="action-btns">
-                      <Link to={`/blogs/edit/${blog.id}`} className="action-btn action-edit" title="Edit">
-                        <RiEditLine />
-                      </Link>
-                      <button
-                        className={`action-btn ${blog.status === 'published' ? 'action-unpublish' : 'action-publish'}`}
-                        onClick={() => handleToggle(blog)}
-                        disabled={togglingId === blog.id}
-                        title={blog.status === 'published' ? 'Unpublish' : 'Publish'}
-                      >
-                        {blog.status === 'published' ? <RiEyeOffLine /> : <RiEyeLine />}
-                      </button>
-                      <button
-                        className="action-btn action-delete"
-                        onClick={() => setDeleteTarget(blog)}
-                        title="Delete"
-                      >
-                        <RiDeleteBinLine />
-                      </button>
-                    </div>
-                  </td>
+        <>
+          {/* ── DESKTOP TABLE ── */}
+          <div className="table-wrap desktop-only">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {blogs.map(blog => (
+                  <tr key={blog.id}>
+                    <td>
+                      <div className="blog-title-cell">{blog.title}</div>
+                      <div className="blog-author-cell">{blog.author}</div>
+                    </td>
+                    <td><span className="category-badge">{blog.category || '—'}</span></td>
+                    <td>
+                      <span className={`status-badge status-${blog.status}`}>
+                        {blog.status}
+                      </span>
+                    </td>
+                    <td className="date-cell">{formatDate(blog.created_at)}</td>
+                    <td>
+                      <div className="action-btns">
+                        <Link to={`/blogs/edit/${blog.id}`} className="action-btn action-edit" title="Edit">
+                          <RiEditLine />
+                        </Link>
+                        <button
+                          className={`action-btn ${blog.status === 'published' ? 'action-unpublish' : 'action-publish'}`}
+                          onClick={() => handleToggle(blog)}
+                          disabled={togglingId === blog.id}
+                          title={blog.status === 'published' ? 'Unpublish' : 'Publish'}
+                        >
+                          {blog.status === 'published' ? <RiEyeOffLine /> : <RiEyeLine />}
+                        </button>
+                        <button
+                          className="action-btn action-delete"
+                          onClick={() => setDeleteTarget(blog)}
+                          title="Delete"
+                        >
+                          <RiDeleteBinLine />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ── MOBILE CARDS ── */}
+          <div className="blog-cards mobile-only">
+            {blogs.map(blog => (
+              <div key={blog.id} className="blog-card-mobile">
+                <div className="bcm-header">
+                  <div className="bcm-meta">
+                    <span className={`status-badge status-${blog.status}`}>{blog.status}</span>
+                    {blog.category && <span className="category-badge">{blog.category}</span>}
+                  </div>
+                  <div className="bcm-date">{formatDate(blog.created_at)}</div>
+                </div>
+
+                <h3 className="bcm-title">{blog.title}</h3>
+                {blog.author && <p className="bcm-author">by {blog.author} · {blog.read_time}</p>}
+
+                <div className="bcm-actions">
+                  <Link to={`/blogs/edit/${blog.id}`} className="bcm-btn bcm-edit">
+                    <RiEditLine /> Edit
+                  </Link>
+                  <button
+                    className={`bcm-btn ${blog.status === 'published' ? 'bcm-unpublish' : 'bcm-publish'}`}
+                    onClick={() => handleToggle(blog)}
+                    disabled={togglingId === blog.id}
+                  >
+                    {blog.status === 'published'
+                      ? <><RiEyeOffLine /> Unpublish</>
+                      : <><RiEyeLine /> Publish</>
+                    }
+                  </button>
+                  <button
+                    className="bcm-btn bcm-delete"
+                    onClick={() => setDeleteTarget(blog)}
+                  >
+                    <RiDeleteBinLine /> Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {deleteTarget && (

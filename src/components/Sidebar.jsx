@@ -1,9 +1,9 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { RiDashboardLine, RiArticleLine, RiLogoutBoxLine } from 'react-icons/ri';
+import { RiDashboardLine, RiArticleLine, RiLogoutBoxLine, RiCloseLine } from 'react-icons/ri';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -12,19 +12,37 @@ export default function Sidebar() {
     navigate('/login');
   }
 
+  function handleNavClick() {
+    // Close sidebar on mobile after nav
+    if (onClose) onClose();
+  }
+
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${isOpen ? ' sidebar-open' : ''}`}>
+      {/* Mobile close button */}
+      <button className="sidebar-close-btn" onClick={onClose} aria-label="Close menu">
+        <RiCloseLine size={20} />
+      </button>
+
       <div className="sidebar-logo">
         <span className="sidebar-logo-text">EVO<span className="sidebar-logo-accent">A</span></span>
         <span className="sidebar-logo-subtitle">Admin</span>
       </div>
 
       <nav className="sidebar-nav">
-        <NavLink to="/dashboard" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
+        <NavLink
+          to="/dashboard"
+          className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+          onClick={handleNavClick}
+        >
           <RiDashboardLine />
           <span>Dashboard</span>
         </NavLink>
-        <NavLink to="/blogs" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
+        <NavLink
+          to="/blogs"
+          className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+          onClick={handleNavClick}
+        >
           <RiArticleLine />
           <span>Blogs</span>
         </NavLink>
