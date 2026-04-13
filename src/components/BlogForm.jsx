@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import RichTextEditor from './RichTextEditor';
 
 const CATEGORIES = ['Funding', 'Pitching', 'Networking', 'Technology', 'Growth', 'Sustainability'];
 
@@ -150,14 +151,9 @@ export default function BlogForm({
           {/* Content */}
           <div className="form-group form-full">
             <label className="form-label">Content <span className="required">*</span></label>
-            <textarea
-              name="content"
-              className="form-textarea"
-              rows={10}
-              placeholder="Write the blog content here…"
+            <RichTextEditor
               value={form.content}
-              onChange={handleChange}
-              required
+              onChange={html => setForm(prev => ({ ...prev, content: html }))}
             />
           </div>
         </div>
