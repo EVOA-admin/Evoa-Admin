@@ -40,12 +40,22 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const sessionUser = session?.user ?? null;
+      if (session?.access_token) {
+        localStorage.setItem('authToken', session.access_token);
+      } else {
+        localStorage.removeItem('authToken');
+      }
       setUser(sessionUser);
       await hydrateAdminProfile(sessionUser);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const sessionUser = session?.user ?? null;
+      if (session?.access_token) {
+        localStorage.setItem('authToken', session.access_token);
+      } else {
+        localStorage.removeItem('authToken');
+      }
       setUser(sessionUser);
       await hydrateAdminProfile(sessionUser);
     });

@@ -18,6 +18,7 @@ export default function Sidebar({ isOpen, onClose }) {
   const { user } = useAuth();
 
   async function handleLogout() {
+    localStorage.removeItem('authToken');
     await supabase.auth.signOut();
     navigate('/login');
   }

@@ -25,17 +25,62 @@ function resolveApiBaseUrl() {
 const API_BASE_URL = resolveApiBaseUrl();
 const REQUEST_TIMEOUT_MS = 8000;
 
+function syncStoredToken(token) {
+  if (token) {
+    localStorage.setItem('authToken', token);
+    return token;
+  }
+
+  localStorage.removeItem('authToken');
+  return null;
+}
+
 async function getAccessToken() {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    const token = data.session?.access_token;
+    if (token) {
+      return syncStoredToken(token);
+    }
+  } catch (_) { /* no-op */ }
+
   const cached = localStorage.getItem('authToken');
   if (cached) return cached;
 
-  const { data, error } = await supabase.auth.getSession();
-  if (error) throw error;
-  const token = data.session?.access_token;
-  if (!token) {
-    throw new Error('No active session found.');
+  try {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error) throw error;
+    const token = data.session?.access_token;
+    if (token) {
+      return syncStoredToken(token);
+    }
+  } catch (_) { /* no-op */ }
+
+  syncStoredToken(null);
+  throw new Error('No active session found.');
+}
+
+async function refreshAccessToken() {
+  try {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error) throw error;
+    const token = data.session?.access_token;
+    if (token) {
+      return syncStoredToken(token);
+    }
+  } catch (_) { /* no-op */ }
+
+  syncStoredToken(null);
+  return null;
+}
+
+function getErrorMessage(payload, fallback = 'Request failed.') {
+  const message = payload?.message;
+  if (Array.isArray(message)) {
+    return message.join(', ');
   }
-  return token;
+  return message || fallback;
 }
 
 function unwrapResponse(payload) {
@@ -86,9 +131,16 @@ export async function adminRequest(path, options = {}) {
   clearTimeout(timeoutId);
 
   const payload = await response.json().catch(() => ({}));
+  if (response.status === 401 && !options._isRetry) {
+    syncStoredToken(null);
+    const refreshedToken = await refreshAccessToken();
+    if (refreshedToken) {
+      return adminRequest(path, { ...options, token: refreshedToken, _isRetry: true });
+    }
+  }
+
   if (!response.ok) {
-    const message = payload?.message;
-    throw new Error(Array.isArray(message) ? message.join(', ') : message || 'Request failed.');
+    throw new Error(getErrorMessage(payload));
   }
 
   return unwrapResponse(payload);
