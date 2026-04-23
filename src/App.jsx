@@ -8,6 +8,11 @@ import Login from './pages/Login';
 
 /* Lazy-load heavy pages so a single broken module can't kill the whole app */
 const Dashboard  = lazy(() => import('./pages/Dashboard'));
+const Users = lazy(() => import('./pages/Users'));
+const Startups = lazy(() => import('./pages/Startups'));
+const Investors = lazy(() => import('./pages/Investors'));
+const Battleground = lazy(() => import('./pages/Battleground'));
+const Payments = lazy(() => import('./pages/Payments'));
 const BlogList   = lazy(() => import('./pages/BlogList'));
 const BlogCreate = lazy(() => import('./pages/BlogCreate'));
 const BlogEdit   = lazy(() => import('./pages/BlogEdit'));
@@ -38,6 +43,11 @@ export default function App() {
               }
             >
               <Route path="/dashboard" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><Dashboard /></ErrorBoundary></Suspense>} />
+              <Route path="/users" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><Users /></ErrorBoundary></Suspense>} />
+              <Route path="/startups" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><Startups /></ErrorBoundary></Suspense>} />
+              <Route path="/investors" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><Investors /></ErrorBoundary></Suspense>} />
+              <Route path="/battleground" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><Battleground /></ErrorBoundary></Suspense>} />
+              <Route path="/payments" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><Payments /></ErrorBoundary></Suspense>} />
               <Route path="/blogs" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><BlogList /></ErrorBoundary></Suspense>} />
               <Route path="/blogs/create" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><BlogCreate /></ErrorBoundary></Suspense>} />
               <Route path="/blogs/edit/:id" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><BlogEdit /></ErrorBoundary></Suspense>} />

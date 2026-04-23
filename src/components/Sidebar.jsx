@@ -1,5 +1,15 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { RiDashboardLine, RiArticleLine, RiLogoutBoxLine, RiCloseLine } from 'react-icons/ri';
+import {
+  RiDashboardLine,
+  RiArticleLine,
+  RiLogoutBoxLine,
+  RiCloseLine,
+  RiTeamLine,
+  RiRocketLine,
+  RiFundsLine,
+  RiSwordLine,
+  RiMoneyDollarCircleLine,
+} from 'react-icons/ri';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -37,6 +47,46 @@ export default function Sidebar({ isOpen, onClose }) {
         >
           <RiDashboardLine />
           <span>Dashboard</span>
+        </NavLink>
+        <NavLink
+          to="/users"
+          className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+          onClick={handleNavClick}
+        >
+          <RiTeamLine />
+          <span>Users</span>
+        </NavLink>
+        <NavLink
+          to="/startups"
+          className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+          onClick={handleNavClick}
+        >
+          <RiRocketLine />
+          <span>Startups</span>
+        </NavLink>
+        <NavLink
+          to="/investors"
+          className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+          onClick={handleNavClick}
+        >
+          <RiFundsLine />
+          <span>Investors</span>
+        </NavLink>
+        <NavLink
+          to="/battleground"
+          className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+          onClick={handleNavClick}
+        >
+          <RiSwordLine />
+          <span>Battleground</span>
+        </NavLink>
+        <NavLink
+          to="/payments"
+          className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+          onClick={handleNavClick}
+        >
+          <RiMoneyDollarCircleLine />
+          <span>Payments</span>
         </NavLink>
         <NavLink
           to="/blogs"

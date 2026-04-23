@@ -1,0 +1,97 @@
+import { supabase } from '../lib/supabase';
+
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  'http://localhost:3000/api'
+).replace(/\/$/, '');
+const REQUEST_TIMEOUT_MS = 8000;
+
+async function getAccessToken() {
+  const cached = localStorage.getItem('authToken');
+  if (cached) return cached;
+
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  const token = data.session?.access_token;
+  if (!token) {
+    throw new Error('No active session found.');
+  }
+  return token;
+}
+
+function unwrapResponse(payload) {
+  if (payload && typeof payload === 'object' && 'data' in payload) {
+    return payload.data;
+  }
+  return payload;
+}
+
+function buildQuery(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '' && value !== 'all') {
+      query.set(key, value);
+    }
+  });
+  const serialized = query.toString();
+  return serialized ? `?${serialized}` : '';
+}
+
+export async function adminRequest(path, options = {}) {
+  const token = options.token || await getAccessToken();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method: options.method || 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...options.headers,
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error?.name === 'AbortError') {
+      throw new Error(`Admin API request timed out after ${REQUEST_TIMEOUT_MS / 1000}s. Check backend availability at ${API_BASE_URL}.`);
+    }
+    if (error instanceof TypeError) {
+      throw new Error(`Unable to reach admin API at ${API_BASE_URL}. Check VITE_API_BASE_URL/VITE_API_URL, backend server status, and CORS settings.`);
+    }
+    throw error;
+  }
+  clearTimeout(timeoutId);
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = payload?.message;
+    throw new Error(Array.isArray(message) ? message.join(', ') : message || 'Request failed.');
+  }
+
+  return unwrapResponse(payload);
+}
+
+export const adminApi = {
+  getSession: (options) => adminRequest('/admin/session', options),
+  getOverview: () => adminRequest('/admin/overview'),
+  getUsers: (filters) => adminRequest(`/admin/users${buildQuery(filters)}`),
+  updateUser: (userId, body) => adminRequest(`/admin/users/${userId}`, { method: 'PATCH', body }),
+  getStartups: (filters) => adminRequest(`/admin/startups${buildQuery(filters)}`),
+  updateStartup: (startupId, body) => adminRequest(`/admin/startups/${startupId}`, { method: 'PATCH', body }),
+  removeStartupPitch: (startupId, reelId) => adminRequest(`/admin/startups/${startupId}/pitches/${reelId}`, { method: 'DELETE' }),
+  getInvestors: (filters) => adminRequest(`/admin/investors${buildQuery(filters)}`),
+  updateInvestor: (userId, body) => adminRequest(`/admin/investors/${userId}`, { method: 'PATCH', body }),
+  getBattleground: () => adminRequest('/admin/battleground'),
+  addBattlegroundStartup: (body) => adminRequest('/admin/battleground/registrations', { method: 'POST', body }),
+  updateBattlegroundRegistration: (registrationId, body) =>
+    adminRequest(`/admin/battleground/registrations/${registrationId}`, { method: 'PATCH', body }),
+  removeBattlegroundRegistration: (registrationId) =>
+    adminRequest(`/admin/battleground/registrations/${registrationId}`, { method: 'DELETE' }),
+  declareWinner: (body) => adminRequest('/admin/battleground/winner', { method: 'PATCH', body }),
+  getPayments: () => adminRequest('/admin/payments'),
+};

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { adminApi } from '../services/adminApi';
 
 const ADMIN_EMAIL = 'admin@evoa.co.in';
 
@@ -22,7 +23,18 @@ export default function Login() {
 
       if (signInError) throw signInError;
 
+      const accessToken = data.session?.access_token;
+      if (accessToken) {
+        localStorage.setItem('authToken', accessToken);
+      }
+
       if (data.user?.email !== ADMIN_EMAIL) {
+        const adminProfile = await adminApi.getSession(accessToken ? { token: accessToken } : undefined);
+        if (adminProfile?.role === 'admin') {
+          navigate('/dashboard');
+          return;
+        }
+
         await supabase.auth.signOut();
         throw new Error('Access denied. Only admin accounts are allowed.');
       }
@@ -53,7 +65,7 @@ export default function Login() {
               id="email"
               type="email"
               className="form-input"
-              placeholder="admin@evoa.co.in"
+              placeholder="you@evoa.co.in"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required

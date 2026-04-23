@@ -412,6 +412,20 @@ html, body, #root {
   margin-top: 2px;
 }
 .date-cell { font-size: 12px; color: var(--color-text-secondary); white-space: nowrap; }
+.table-primary { font-weight: 600; color: var(--color-text); }
+.table-secondary { font-size: 12px; color: var(--color-text-secondary); }
+.table-code {
+  max-width: 220px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  word-break: break-all;
+}
+.table-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
 
 /* ─── MOBILE BLOG CARDS ─── */
 .blog-cards { display: flex; flex-direction: column; gap: 12px; }
@@ -510,6 +524,27 @@ html, body, #root {
 .status-published { background: var(--color-success-bg); color: var(--color-success); }
 .status-draft     { background: #fffbeb; color: var(--color-warning); }
 
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.chip-neutral { background: #eef2f7; color: #475467; }
+.chip-success { background: #ecfdf3; color: #027a48; }
+.chip-warning { background: #fffaeb; color: #b54708; }
+.chip-danger { background: #fef3f2; color: #b42318; }
+
+.stacked-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 /* ─── EMPTY STATE ─── */
 .empty-state {
   text-align: center;
@@ -522,6 +557,104 @@ html, body, #root {
 .empty-icon { font-size: 40px; margin-bottom: 12px; }
 .empty-state h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
 .empty-state p { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 20px; }
+
+.panel-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+}
+
+.panel-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.panel-copy {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.panel-copy-strong {
+  color: var(--color-text);
+  font-weight: 700;
+  margin: 6px 0;
+}
+
+.admin-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.filters-card {
+  margin-bottom: 20px;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.filters-grid-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inline-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.input-compact {
+  min-width: 180px;
+}
+
+.btn-xs {
+  padding: 7px 11px;
+  font-size: 12px;
+}
+
+.stacked-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.panel-actions {
+  margin-bottom: 16px;
+}
+
+.inner-table-wrap {
+  box-shadow: none;
+}
+
+.stats-grid-admin {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stat-card-value-compact {
+  font-size: 24px;
+  line-height: 1.2;
+}
 
 /* ─── ALERTS ─── */
 .alert {
@@ -782,6 +915,8 @@ html, body, #root {
 @media (max-width: 1024px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .page { padding: 28px 24px; }
+  .filters-grid,
+  .filters-grid-three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* ── Mobile (≤768px) ── */
@@ -828,9 +963,16 @@ html, body, #root {
     grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
+  .stats-grid-admin,
+  .admin-summary-grid,
+  .filters-grid,
+  .filters-grid-three {
+    grid-template-columns: 1fr;
+  }
   .stat-card { padding: 18px 14px; gap: 12px; }
   .stat-card-icon { width: 40px; height: 40px; border-radius: 10px; }
   .stat-card-value { font-size: 26px; }
+  .panel-header-row { flex-direction: column; }
 
   /* Table → cards */
   .desktop-only { display: none !important; }
@@ -1196,4 +1338,3 @@ html, body, #root {
   .rte-btn { min-width: 26px; height: 26px; font-size: 12px; }
   .rte-select { font-size: 11px; height: 26px; }
 }
-

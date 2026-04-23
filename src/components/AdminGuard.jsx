@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 const ADMIN_EMAIL = 'admin@evoa.co.in';
 
 export default function AdminGuard({ children }) {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
 
   if (loading) {
     return (
@@ -14,7 +14,7 @@ export default function AdminGuard({ children }) {
     );
   }
 
-  if (!user || user.email !== ADMIN_EMAIL) {
+  if (!user || (profile?.role !== 'admin' && user.email !== ADMIN_EMAIL)) {
     return <Navigate to="/login" replace />;
   }
 
