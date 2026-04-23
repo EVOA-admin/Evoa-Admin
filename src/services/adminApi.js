@@ -1,10 +1,28 @@
 import { supabase } from '../lib/supabase';
 
-const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  'http://localhost:3000/api'
-).replace(/\/$/, '');
+const PRODUCTION_API_FALLBACK = 'https://evoa-backend.onrender.com/api';
+
+function isLocalHost(hostname) {
+  return hostname === 'localhost' || hostname === '127.0.0.1';
+}
+
+function resolveApiBaseUrl() {
+  const configuredUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
+  if (configuredUrl) {
+    return configuredUrl.replace(/\/$/, '');
+  }
+
+  if (typeof window !== 'undefined') {
+    const { hostname } = window.location;
+    if (!isLocalHost(hostname)) {
+      return PRODUCTION_API_FALLBACK;
+    }
+  }
+
+  return 'http://localhost:3000/api';
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 const REQUEST_TIMEOUT_MS = 8000;
 
 async function getAccessToken() {
