@@ -9,7 +9,30 @@ function isLocalHost(hostname) {
 function resolveApiBaseUrl() {
   const configuredUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
   if (configuredUrl) {
-    return configuredUrl.replace(/\/$/, '');
+    const trimmedUrl = configuredUrl.trim().replace(/\/+$/, '');
+
+    if (/^https?:\/\//i.test(trimmedUrl)) {
+      try {
+        const parsedUrl = new URL(trimmedUrl);
+        parsedUrl.pathname = parsedUrl.pathname.replace(/\/+$/, '');
+
+        if (!parsedUrl.pathname || parsedUrl.pathname === '/') {
+          parsedUrl.pathname = '/api';
+        } else if (!parsedUrl.pathname.endsWith('/api')) {
+          parsedUrl.pathname = `${parsedUrl.pathname}/api`;
+        }
+
+        return parsedUrl.toString().replace(/\/+$/, '');
+      } catch {
+        return trimmedUrl;
+      }
+    }
+
+    if (trimmedUrl === '/api' || trimmedUrl.endsWith('/api')) {
+      return trimmedUrl;
+    }
+
+    return `${trimmedUrl}/api`;
   }
 
   if (typeof window !== 'undefined') {
@@ -36,6 +59,8 @@ function syncStoredToken(token) {
 }
 
 async function getAccessToken() {
+  let sessionLookupFailed = false;
+
   try {
     const { data, error } = await supabase.auth.getSession();
     if (error) throw error;
@@ -43,10 +68,9 @@ async function getAccessToken() {
     if (token) {
       return syncStoredToken(token);
     }
-  } catch (_) { /* no-op */ }
-
-  const cached = localStorage.getItem('authToken');
-  if (cached) return cached;
+  } catch (_) {
+    sessionLookupFailed = true;
+  }
 
   try {
     const { data, error } = await supabase.auth.refreshSession();
@@ -56,6 +80,11 @@ async function getAccessToken() {
       return syncStoredToken(token);
     }
   } catch (_) { /* no-op */ }
+
+  if (sessionLookupFailed) {
+    const cached = localStorage.getItem('authToken');
+    if (cached) return cached;
+  }
 
   syncStoredToken(null);
   throw new Error('No active session found.');

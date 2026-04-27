@@ -9,6 +9,28 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined); // undefined = loading
   const [profile, setProfile] = useState(undefined);
 
+  function clearAuthState() {
+    localStorage.removeItem('authToken');
+    setUser(null);
+    setProfile(null);
+  }
+
+  async function recoverSession() {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      if (data?.session) return data.session;
+    } catch (_) { /* no-op */ }
+
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) throw error;
+      return data?.session ?? null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   async function hydrateAdminProfile(sessionUser) {
     if (!sessionUser) {
       setProfile(null);
@@ -38,29 +60,50 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      const sessionUser = session?.user ?? null;
+    let isMounted = true;
+
+    const handleSession = async (event, session) => {
+      if (!session?.user) {
+        if (event === 'SIGNED_OUT') {
+          clearAuthState();
+          return;
+        }
+
+        const recoveredSession = await recoverSession();
+        if (!isMounted) return;
+
+        if (!recoveredSession?.user) {
+          clearAuthState();
+          return;
+        }
+
+        session = recoveredSession;
+      }
+
       if (session?.access_token) {
         localStorage.setItem('authToken', session.access_token);
       } else {
         localStorage.removeItem('authToken');
       }
-      setUser(sessionUser);
-      await hydrateAdminProfile(sessionUser);
+
+      setUser(session.user);
+      await hydrateAdminProfile(session.user);
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
+      handleSession('INITIAL_SESSION', session);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const sessionUser = session?.user ?? null;
-      if (session?.access_token) {
-        localStorage.setItem('authToken', session.access_token);
-      } else {
-        localStorage.removeItem('authToken');
-      }
-      setUser(sessionUser);
-      await hydrateAdminProfile(sessionUser);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!isMounted) return;
+      handleSession(event, session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
