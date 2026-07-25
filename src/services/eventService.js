@@ -44,8 +44,20 @@ async function handleResponse(res) {
 export const eventService = {
   async getAllEvents() {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_BASE_URL}/events/admin/all`, { headers });
-    return handleResponse(res);
+    try {
+      const res = await fetch(`${API_BASE_URL}/events/admin/all`, { headers });
+      if (res.status === 404) {
+        const fallbackRes = await fetch(`${API_BASE_URL}/events`, { headers });
+        return handleResponse(fallbackRes);
+      }
+      return handleResponse(res);
+    } catch (err) {
+      if (err.message && err.message.includes('Cannot GET')) {
+        const fallbackRes = await fetch(`${API_BASE_URL}/events`, { headers });
+        return handleResponse(fallbackRes);
+      }
+      throw err;
+    }
   },
 
   async getEventById(id) {
