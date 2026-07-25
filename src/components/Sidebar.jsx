@@ -9,6 +9,7 @@ import {
   RiFundsLine,
   RiSwordLine,
   RiMoneyDollarCircleLine,
+  RiCalendarEventLine,
 } from 'react-icons/ri';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -96,6 +97,14 @@ export default function Sidebar({ isOpen, onClose }) {
         >
           <RiArticleLine />
           <span>Blogs</span>
+        </NavLink>
+        <NavLink
+          to="/events"
+          className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+          onClick={handleNavClick}
+        >
+          <RiCalendarEventLine />
+          <span>Events</span>
         </NavLink>
       </nav>
 

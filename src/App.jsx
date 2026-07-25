@@ -16,6 +16,9 @@ const Payments = lazy(() => import('./pages/Payments'));
 const BlogList   = lazy(() => import('./pages/BlogList'));
 const BlogCreate = lazy(() => import('./pages/BlogCreate'));
 const BlogEdit   = lazy(() => import('./pages/BlogEdit'));
+const EventList   = lazy(() => import('./pages/EventList'));
+const EventCreate = lazy(() => import('./pages/EventCreate'));
+const EventEdit   = lazy(() => import('./pages/EventEdit'));
 
 function PageLoader() {
   return (
@@ -51,6 +54,9 @@ export default function App() {
               <Route path="/blogs" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><BlogList /></ErrorBoundary></Suspense>} />
               <Route path="/blogs/create" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><BlogCreate /></ErrorBoundary></Suspense>} />
               <Route path="/blogs/edit/:id" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><BlogEdit /></ErrorBoundary></Suspense>} />
+              <Route path="/events" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><EventList /></ErrorBoundary></Suspense>} />
+              <Route path="/events/create" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><EventCreate /></ErrorBoundary></Suspense>} />
+              <Route path="/events/edit/:id" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><EventEdit /></ErrorBoundary></Suspense>} />
             </Route>
 
             {/* Default redirect */}
