@@ -1,13 +1,16 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { eventService } from '../services/eventService';
 import EventForm from '../components/EventForm';
 
 export default function EventCreate() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  const eventTypeParam = searchParams.get('type') || 'event_with_subscription';
 
   async function handleSubmit(formData) {
     setSaving(true);
@@ -32,6 +35,7 @@ export default function EventCreate() {
         </div>
       </div>
       <EventForm
+        initialData={{ event_type: eventTypeParam }}
         onSubmit={handleSubmit}
         saving={saving}
         successMsg={successMsg}

@@ -50,6 +50,7 @@ export default function EventForm({ initialData = {}, onSubmit, saving, errorMsg
   const [bannerUrl, setBannerUrl] = useState(initialData.banner_url || initialData.bannerUrl || initialData.poster_url || initialData.posterUrl || '');
   const [organizer, setOrganizer] = useState(initialData.organizer || '');
   const [venueType, setVenueType] = useState(initialData.venue_type || initialData.venueType || 'hybrid');
+  const [eventType, setEventType] = useState(initialData.event_type || initialData.eventType || 'event_with_subscription');
 
   // Schedule & Location
   const [startDate, setStartDate] = useState(initialData.start_date || initialData.startDate || '');
@@ -168,6 +169,7 @@ export default function EventForm({ initialData = {}, onSubmit, saving, errorMsg
       posterUrl: bannerUrl,
       organizer: organizer || 'EVOA',
       venueType,
+      eventType,
       startDate,
       endDate,
       startTime,
@@ -272,7 +274,25 @@ export default function EventForm({ initialData = {}, onSubmit, saving, errorMsg
 
           {/* Event Type */}
           <div className="form-group">
-            <label className="form-label">Event Type</label>
+            <label className="form-label">Event Type <span className="required">*</span></label>
+            <select
+              className="form-select"
+              value={eventType}
+              onChange={e => setEventType(e.target.value)}
+            >
+              <option value="event">Event</option>
+              <option value="event_with_subscription">Event + Evoa Subscription</option>
+            </select>
+            <small style={{ fontSize: 11, color: '#6b7280', marginTop: 4, display: 'block' }}>
+              {eventType === 'event' || eventType === 'event_only'
+                ? 'Ticket purchasers receive event access pass only.'
+                : 'Ticket purchasers receive event pass + 1 Month Evoa Subscription.'}
+            </small>
+          </div>
+
+          {/* Venue Mode / Format */}
+          <div className="form-group">
+            <label className="form-label">Venue Mode / Format</label>
             <select
               className="form-select"
               value={venueType}

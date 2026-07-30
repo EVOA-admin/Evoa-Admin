@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   RiAddLine, RiEditLine, RiDeleteBinLine, RiStarLine, RiStarFill,
-  RiSearchLine, RiCalendarEventLine, RiMapPinLine, RiTicketLine,
+  RiSearchLine, RiCalendarEventLine, RiMapPinLine, RiTicketLine, RiArrowDownSLine,
 } from 'react-icons/ri';
 import { eventService } from '../services/eventService';
 import DeleteModal from '../components/DeleteModal';
@@ -28,6 +28,18 @@ export default function EventList() {
   const [toastType, setToastType] = useState('success');
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [showCreateMenu, setShowCreateMenu] = useState(false);
+  const createMenuRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (createMenuRef.current && !createMenuRef.current.contains(event.target)) {
+        setShowCreateMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     loadEvents();
@@ -127,10 +139,109 @@ export default function EventList() {
           </h1>
           <p className="page-subtitle">Manage live events, collaborations, schedules, venue details, and ticketing tiers</p>
         </div>
-        <Link to="/events/create" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          <RiAddLine size={18} />
-          Create Event
-        </Link>
+        {/* Create Event Dropdown Menu */}
+        <div style={{ position: 'relative' }} ref={createMenuRef}>
+          <button
+            onClick={() => setShowCreateMenu(!showCreateMenu)}
+            className="btn btn-primary"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              paddingRight: 14,
+              fontWeight: 600,
+              boxShadow: '0 2px 10px rgba(99, 102, 241, 0.25)',
+              cursor: 'pointer',
+            }}
+          >
+            <RiAddLine size={18} />
+            Create Event
+            <RiArrowDownSLine
+              size={18}
+              style={{
+                transform: showCreateMenu ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s ease',
+              }}
+            />
+          </button>
+
+          {showCreateMenu && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                right: 0,
+                width: 290,
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: 12,
+                boxShadow: '0 12px 36px rgba(15, 23, 42, 0.15), 0 4px 12px rgba(15, 23, 42, 0.08)',
+                zIndex: 100,
+                padding: '8px 0',
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ padding: '8px 16px 6px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94a3b8', borderBottom: '1px solid #f1f5f9' }}>
+                Select Event Type
+              </div>
+
+              <Link
+                to="/events/create?type=event"
+                onClick={() => setShowCreateMenu(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                  padding: '12px 16px',
+                  color: '#0f172a',
+                  textDecoration: 'none',
+                  transition: 'background 0.15s ease',
+                  borderBottom: '1px solid #f8fafc',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <div style={{ width: 34, height: 34, borderRadius: 8, background: '#f1f5f9', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                  <RiTicketLine size={18} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>Event</div>
+                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 2, lineHeight: 1.35 }}>
+                    Event access pass only (no Evoa subscription)
+                  </div>
+                </div>
+              </Link>
+
+              <Link
+                to="/events/create?type=event_with_subscription"
+                onClick={() => setShowCreateMenu(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                  padding: '12px 16px',
+                  color: '#0f172a',
+                  textDecoration: 'none',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#eef2ff'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <div style={{ width: 34, height: 34, borderRadius: 8, background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                  <RiCalendarEventLine size={18} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#4338ca' }}>
+                    Event + Evoa Subscription
+                  </div>
+                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 2, lineHeight: 1.35 }}>
+                    Event pass + 1 Month Evoa subscription
+                  </div>
+                </div>
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Filter Bar */}
@@ -212,6 +323,19 @@ export default function EventList() {
                           {evt.collaborationName && (
                             <div style={{ fontSize: 12, color: '#6366f1', fontWeight: 500, marginTop: 2 }}>{evt.collaborationName}</div>
                           )}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                            <span style={{
+                              fontSize: 10,
+                              fontWeight: 600,
+                              padding: '2px 6px',
+                              borderRadius: 4,
+                              background: (evt.eventType === 'event' || evt.eventType === 'event_only') ? '#f1f5f9' : '#e0e7ff',
+                              color: (evt.eventType === 'event' || evt.eventType === 'event_only') ? '#475569' : '#4338ca',
+                              border: (evt.eventType === 'event' || evt.eventType === 'event_only') ? '1px solid #cbd5e1' : '1px solid #c7d2fe',
+                            }}>
+                              {(evt.eventType === 'event' || evt.eventType === 'event_only') ? 'Event' : 'Event + Subscription'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </td>
