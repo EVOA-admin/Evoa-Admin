@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabase';
 import { adminApi } from '../services/adminApi';
 
 const AuthContext = createContext(null);
-const ADMIN_EMAIL = 'admin@evoa.co.in';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined); // undefined = loading
@@ -11,108 +10,87 @@ export function AuthProvider({ children }) {
 
   function clearAuthState() {
     localStorage.removeItem('authToken');
+    localStorage.removeItem('adminProfile');
     setUser(null);
     setProfile(null);
   }
 
-  async function recoverSession() {
+  const logout = async () => {
     try {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) throw error;
-      if (data?.session) return data.session;
+      await supabase.auth.signOut();
     } catch (_) { /* no-op */ }
-
-    try {
-      const { data, error } = await supabase.auth.refreshSession();
-      if (error) throw error;
-      return data?.session ?? null;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  async function hydrateAdminProfile(sessionUser) {
-    if (!sessionUser) {
-      setProfile(null);
-      return;
-    }
-
-    if (sessionUser.email === ADMIN_EMAIL) {
-      setProfile({
-        id: sessionUser.id,
-        email: sessionUser.email,
-        fullName: sessionUser.user_metadata?.full_name || sessionUser.user_metadata?.name || 'Admin',
-        role: 'admin',
-      });
-
-      adminApi.getSession()
-        .then((adminProfile) => setProfile(adminProfile))
-        .catch(() => { /* keep fallback admin profile */ });
-      return;
-    }
-
-    try {
-      const adminProfile = await adminApi.getSession();
-      setProfile(adminProfile);
-    } catch {
-      setProfile(null);
-    }
-  }
+    clearAuthState();
+  };
 
   useEffect(() => {
     let isMounted = true;
 
-    const handleSession = async (event, session) => {
-      if (!session?.user) {
-        if (event === 'SIGNED_OUT') {
-          clearAuthState();
-          return;
+    async function initAuth() {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        if (isMounted) {
+          setUser(null);
+          setProfile(null);
         }
-
-        const recoveredSession = await recoverSession();
-        if (!isMounted) return;
-
-        if (!recoveredSession?.user) {
-          clearAuthState();
-          return;
-        }
-
-        session = recoveredSession;
+        return;
       }
 
-      if (session?.access_token) {
-        localStorage.setItem('authToken', session.access_token);
-      } else {
-        localStorage.removeItem('authToken');
+      try {
+        const adminData = await adminApi.getAuthMe();
+        if (isMounted && adminData?.id) {
+          setUser({ id: adminData.id, email: adminData.email });
+          setProfile(adminData);
+          localStorage.setItem('adminProfile', JSON.stringify(adminData));
+          return;
+        }
+      } catch (_) { /* proceed to session fallback */ }
+
+      try {
+        const adminData = await adminApi.getSession();
+        if (isMounted && adminData) {
+          setUser({ id: adminData.id || 'admin', email: adminData.email });
+          setProfile(adminData);
+          return;
+        }
+      } catch (_) { /* proceed to cached profile fallback */ }
+
+      const cached = localStorage.getItem('adminProfile');
+      if (cached && isMounted) {
+        try {
+          const parsed = JSON.parse(cached);
+          setUser({ id: parsed.id, email: parsed.email });
+          setProfile(parsed);
+          return;
+        } catch (_) { /* ignore */ }
       }
 
-      setUser(session.user);
-      await hydrateAdminProfile(session.user);
-    };
+      if (isMounted) {
+        clearAuthState();
+      }
+    }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!isMounted) return;
-      handleSession('INITIAL_SESSION', session);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!isMounted) return;
-      handleSession(event, session);
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
+    initAuth();
   }, []);
 
+  const value = {
+    user,
+    profile,
+    loading: user === undefined,
+    logout,
+    clearAuthState,
+  };
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading: user === undefined || profile === undefined }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }

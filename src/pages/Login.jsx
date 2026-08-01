@@ -19,29 +19,28 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-
-      if (signInError) throw signInError;
-
-      const accessToken = data.session?.access_token;
-      if (accessToken) {
-        localStorage.setItem('authToken', accessToken);
+      const result = await adminApi.login({ email, password });
+      if (result?.token) {
+        localStorage.setItem('authToken', result.token);
+        if (result.admin) {
+          localStorage.setItem('adminProfile', JSON.stringify(result.admin));
+        }
+        const targetPath = result.admin?.role === 'EVENT_ADMIN' ? '/events' : '/dashboard';
+        window.location.href = targetPath;
+        return;
       }
-
-      if (data.user?.email !== ADMIN_EMAIL) {
-        const adminProfile = await adminApi.getSession(accessToken ? { token: accessToken } : undefined);
-        if (adminProfile?.role === 'admin') {
-          navigate('/dashboard');
+      throw new Error('Invalid credentials');
+    } catch (err) {
+      try {
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (!signInError && data.session?.access_token) {
+          localStorage.setItem('authToken', data.session.access_token);
+          window.location.href = '/dashboard';
           return;
         }
+      } catch (_) { /* no-op fallback */ }
 
-        await supabase.auth.signOut();
-        throw new Error('Access denied. Only admin accounts are allowed.');
-      }
-
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.message || 'Sign in failed. Please try again.');
+      setError(err.message || 'Invalid credentials');
     } finally {
       setLoading(false);
     }

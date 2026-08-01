@@ -280,11 +280,6 @@ export default function EventList() {
           <p style={{ fontSize: 14, color: '#6b7280', marginTop: 4 }}>
             {search || statusFilter !== 'all' ? 'Try adjusting your search or filters.' : 'Get started by creating your first EVOA event.'}
           </p>
-          {!events.length && (
-            <Link to="/events/create" className="btn btn-primary" style={{ marginTop: 16, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <RiAddLine size={16} /> Create Event
-            </Link>
-          )}
         </div>
       ) : (
         /* Events Table */

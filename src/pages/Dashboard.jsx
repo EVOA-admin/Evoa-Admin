@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import {
   RiGroupLine,
   RiRocketLine,
@@ -16,6 +17,16 @@ const currency = new Intl.NumberFormat('en-IN', {
 });
 
 export default function Dashboard() {
+  const cachedProfile = localStorage.getItem('adminProfile');
+  if (cachedProfile) {
+    try {
+      const parsed = JSON.parse(cachedProfile);
+      if (parsed.role === 'EVENT_ADMIN') {
+        return <Navigate to="/events" replace />;
+      }
+    } catch (_) { /* ignore */ }
+  }
+
   const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

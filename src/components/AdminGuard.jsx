@@ -1,8 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-const ADMIN_EMAIL = 'admin@evoa.co.in';
-
 export default function AdminGuard({ children }) {
   const { user, profile, loading } = useAuth();
 
@@ -14,7 +12,9 @@ export default function AdminGuard({ children }) {
     );
   }
 
-  if (!user || (profile?.role !== 'admin' && user.email !== ADMIN_EMAIL)) {
+  const token = localStorage.getItem('authToken');
+
+  if (!user && !profile && !token) {
     return <Navigate to="/login" replace />;
   }
 

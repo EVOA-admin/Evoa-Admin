@@ -59,35 +59,17 @@ function syncStoredToken(token) {
 }
 
 async function getAccessToken() {
-  let sessionLookupFailed = false;
+  const cached = localStorage.getItem('authToken');
+  if (cached) return cached;
 
   try {
     const { data, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    const token = data.session?.access_token;
-    if (token) {
-      return syncStoredToken(token);
+    if (!error && data.session?.access_token) {
+      return syncStoredToken(data.session.access_token);
     }
-  } catch (_) {
-    sessionLookupFailed = true;
-  }
+  } catch (_) { /* no-op fallback */ }
 
-  try {
-    const { data, error } = await supabase.auth.refreshSession();
-    if (error) throw error;
-    const token = data.session?.access_token;
-    if (token) {
-      return syncStoredToken(token);
-    }
-  } catch (_) { /* no-op */ }
-
-  if (sessionLookupFailed) {
-    const cached = localStorage.getItem('authToken');
-    if (cached) return cached;
-  }
-
-  syncStoredToken(null);
-  throw new Error('No active session found.');
+  return null;
 }
 
 async function refreshAccessToken() {
@@ -131,19 +113,31 @@ function buildQuery(params = {}) {
 }
 
 export async function adminRequest(path, options = {}) {
-  const token = options.token || await getAccessToken();
+  let token = options.token;
+  if (!token && !options.skipAuth) {
+    try {
+      token = await getAccessToken();
+    } catch (_) {
+      token = localStorage.getItem('authToken');
+    }
+  }
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   let response;
 
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       method: options.method || 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-        ...options.headers,
-      },
+      headers,
       body: options.body ? JSON.stringify(options.body) : undefined,
       signal: controller.signal,
     });
@@ -160,7 +154,7 @@ export async function adminRequest(path, options = {}) {
   clearTimeout(timeoutId);
 
   const payload = await response.json().catch(() => ({}));
-  if (response.status === 401 && !options._isRetry) {
+  if (response.status === 401 && !options._isRetry && !options.skipAuth) {
     syncStoredToken(null);
     const refreshedToken = await refreshAccessToken();
     if (refreshedToken) {
@@ -176,6 +170,8 @@ export async function adminRequest(path, options = {}) {
 }
 
 export const adminApi = {
+  login: (body) => adminRequest('/admin/auth/login', { method: 'POST', body, skipAuth: true }),
+  getAuthMe: () => adminRequest('/admin/auth/me'),
   getSession: (options) => adminRequest('/admin/session', options),
   getOverview: () => adminRequest('/admin/overview'),
   getUsers: (filters) => adminRequest(`/admin/users${buildQuery(filters)}`),
@@ -193,4 +189,10 @@ export const adminApi = {
     adminRequest(`/admin/battleground/registrations/${registrationId}`, { method: 'DELETE' }),
   declareWinner: (body) => adminRequest('/admin/battleground/winner', { method: 'PATCH', body }),
   getPayments: () => adminRequest('/admin/payments'),
+  getEventAdmins: () => adminRequest('/admin/management'),
+  createEventAdmin: (body) => adminRequest('/admin/management', { method: 'POST', body }),
+  updateEventAdmin: (id, body) => adminRequest(`/admin/management/${id}`, { method: 'PATCH', body }),
+  resetAdminPassword: (id, body) => adminRequest(`/admin/management/${id}/reset-password`, { method: 'PATCH', body }),
+  toggleAdminStatus: (id) => adminRequest(`/admin/management/${id}/toggle-status`, { method: 'PATCH' }),
+  deleteEventAdmin: (id) => adminRequest(`/admin/management/${id}`, { method: 'DELETE' }),
 };

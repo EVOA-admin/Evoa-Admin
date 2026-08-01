@@ -169,7 +169,7 @@ export default function EventForm({ initialData = {}, onSubmit, saving, errorMsg
       posterUrl: bannerUrl,
       organizer: organizer || 'EVOA',
       venueType,
-      eventType,
+      eventType: (eventType === 'event' || eventType === 'event_only') ? 'event_only' : 'event_with_subscription',
       startDate,
       endDate,
       startTime,
@@ -270,24 +270,6 @@ export default function EventForm({ initialData = {}, onSubmit, saving, errorMsg
               onChange={e => setOrganizer(e.target.value)}
               placeholder="e.g. EVOA & PitchIn Network"
             />
-          </div>
-
-          {/* Event Type */}
-          <div className="form-group">
-            <label className="form-label">Event Type <span className="required">*</span></label>
-            <select
-              className="form-select"
-              value={eventType}
-              onChange={e => setEventType(e.target.value)}
-            >
-              <option value="event">Event</option>
-              <option value="event_with_subscription">Event + Evoa Subscription</option>
-            </select>
-            <small style={{ fontSize: 11, color: '#6b7280', marginTop: 4, display: 'block' }}>
-              {eventType === 'event' || eventType === 'event_only'
-                ? 'Ticket purchasers receive event access pass only.'
-                : 'Ticket purchasers receive event pass + 1 Month Evoa Subscription.'}
-            </small>
           </div>
 
           {/* Venue Mode / Format */}

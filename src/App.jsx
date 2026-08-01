@@ -19,6 +19,7 @@ const BlogEdit   = lazy(() => import('./pages/BlogEdit'));
 const EventList   = lazy(() => import('./pages/EventList'));
 const EventCreate = lazy(() => import('./pages/EventCreate'));
 const EventEdit   = lazy(() => import('./pages/EventEdit'));
+const AdminManagement = lazy(() => import('./pages/AdminManagement'));
 
 function PageLoader() {
   return (
@@ -26,6 +27,19 @@ function PageLoader() {
       <span style={{ width: 36, height: 36, border: '3px solid #e8eaed', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />
     </div>
   );
+}
+
+function DefaultRedirect() {
+  const cachedProfile = localStorage.getItem('adminProfile');
+  if (cachedProfile) {
+    try {
+      const parsed = JSON.parse(cachedProfile);
+      if (parsed.role === 'EVENT_ADMIN') {
+        return <Navigate to="/events" replace />;
+      }
+    } catch (_) { /* ignore */ }
+  }
+  return <Navigate to="/dashboard" replace />;
 }
 
 export default function App() {
@@ -57,11 +71,12 @@ export default function App() {
               <Route path="/events" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><EventList /></ErrorBoundary></Suspense>} />
               <Route path="/events/create" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><EventCreate /></ErrorBoundary></Suspense>} />
               <Route path="/events/edit/:id" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><EventEdit /></ErrorBoundary></Suspense>} />
+              <Route path="/admin-management" element={<Suspense fallback={<PageLoader />}><ErrorBoundary><AdminManagement /></ErrorBoundary></Suspense>} />
             </Route>
 
             {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<DefaultRedirect />} />
+            <Route path="*" element={<DefaultRedirect />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
