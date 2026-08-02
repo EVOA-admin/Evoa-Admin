@@ -145,7 +145,100 @@ export const eventService = {
 
   async getEventCustomers() {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_BASE_URL}/events/admin/customers`, { headers });
-    return handleResponse(res);
+    let backendTickets = null;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/events/admin/customers`, { headers });
+      if (res.ok) {
+        backendTickets = await handleResponse(res);
+      }
+    } catch (err) {
+      console.warn('Backend customers API endpoint unavailable, falling back to Supabase:', err);
+    }
+
+    if (Array.isArray(backendTickets) && backendTickets.length > 0) {
+      return backendTickets;
+    }
+
+    // Resilient Fallback: Query Supabase user_event_tickets table directly
+    let supabaseTickets = [];
+    try {
+      const { data: tickets, error } = await supabase
+        .from('user_event_tickets')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && Array.isArray(tickets)) {
+        supabaseTickets = tickets;
+      }
+    } catch (sbErr) {
+      console.error('Supabase customer tickets fallback error:', sbErr);
+    }
+
+    // Combine Supabase tickets & local browser tickets
+    let localTickets = [];
+    try {
+      const stored = localStorage.getItem('evoa_user_purchased_tickets');
+      if (stored) localTickets = JSON.parse(stored);
+      const mapStored = localStorage.getItem('evoa_user_tickets_map');
+      if (mapStored) {
+        const parsedMap = JSON.parse(mapStored);
+        Object.values(parsedMap).forEach(t => {
+          if (t && typeof t === 'object') localTickets.push(t);
+        });
+      }
+    } catch (_) {}
+
+    // Fetch published events to map eventId -> title
+    let eventsList = [];
+    try {
+      const { data: evts } = await supabase.from('events').select('id, title');
+      eventsList = evts || [];
+    } catch (_) {}
+
+    const eventTitleMap = {};
+    eventsList.forEach(e => { eventTitleMap[e.id] = e.title; });
+
+    const allCombined = [...supabaseTickets, ...localTickets];
+    const seenCodes = new Set();
+    const result = [];
+
+    allCombined.forEach(ut => {
+      const code = ut.ticket_code || ut.ticketCode || ut.id;
+      if (!code || seenCodes.has(code)) return;
+      seenCodes.add(code);
+
+      const rawName = ut.user_name || ut.userName || ut.fullName || '';
+      const isEmail = (str) => typeof str === 'string' && str.includes('@');
+      let fullName = rawName && !isEmail(rawName) ? rawName.trim() : '';
+      const email = ut.user_email || ut.userEmail || ut.email || '';
+
+      if (!fullName && email && isEmail(email)) {
+        const handle = email.split('@')[0].replace(/[._-]/g, ' ');
+        fullName = handle.replace(/\b\w/g, (c) => c.toUpperCase());
+      }
+      if (!fullName) fullName = 'Attendee';
+
+      const price = Number(ut.price || 0);
+      const eventId = ut.event_id || ut.eventId;
+      const eventName = ut.event?.title || eventTitleMap[eventId] || 'EVOA Event';
+
+      result.push({
+        id: ut.id || code,
+        ticketCode: code,
+        fullName,
+        email: email || 'N/A',
+        eventName,
+        eventId,
+        userRole: (ut.user_role || ut.userRole || 'ATTENDEE').toUpperCase(),
+        purchaseDate: ut.created_at || ut.createdAt || new Date().toISOString(),
+        price,
+        paymentStatus: price > 0 ? 'COMPLETED (PAID)' : 'COMPLETED (FREE PASS)',
+        orderId: ut.order_id || ut.orderId || null,
+        paymentId: ut.payment_id || ut.paymentId || null,
+      });
+    });
+
+    return result.sort((a, b) => new Date(b.purchaseDate || 0) - new Date(a.purchaseDate || 0));
   },
 };
