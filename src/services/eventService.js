@@ -142,4 +142,10 @@ export const eventService = {
     });
     return handleResponse(res);
   },
+
+  async getEventCustomers() {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_BASE_URL}/events/admin/customers`, { headers });
+    return handleResponse(res);
+  },
 };

@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import {
   RiAddLine, RiEditLine, RiDeleteBinLine, RiStarLine, RiStarFill,
   RiSearchLine, RiCalendarEventLine, RiMapPinLine, RiTicketLine, RiArrowDownSLine,
+  RiUserLine, RiMailLine, RiRefreshLine, RiCheckLine,
 } from 'react-icons/ri';
 import { eventService } from '../services/eventService';
+import { useAuth } from '../contexts/AuthContext';
 import DeleteModal from '../components/DeleteModal';
 
 function formatDate(dateStr) {
@@ -19,6 +21,9 @@ function formatDate(dateStr) {
 }
 
 export default function EventList() {
+  const { profile } = useAuth();
+  const isSuperAdmin = profile?.role !== 'EVENT_ADMIN';
+
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -30,6 +35,11 @@ export default function EventList() {
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const createMenuRef = useRef(null);
+
+  // Customers Tab State
+  const [customers, setCustomers] = useState([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [customerError, setCustomerError] = useState('');
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -45,6 +55,14 @@ export default function EventList() {
     loadEvents();
   }, []);
 
+  useEffect(() => {
+    if (statusFilter === 'customers' && isSuperAdmin) {
+      loadCustomers();
+      const interval = setInterval(loadCustomers, 15000); // Auto update customer list
+      return () => clearInterval(interval);
+    }
+  }, [statusFilter, isSuperAdmin]);
+
   async function loadEvents() {
     try {
       setLoading(true);
@@ -56,6 +74,20 @@ export default function EventList() {
       setError(err.message || 'Failed to load events');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadCustomers() {
+    try {
+      setLoadingCustomers(true);
+      setCustomerError('');
+      const resData = await eventService.getEventCustomers();
+      const list = Array.isArray(resData) ? resData : (resData?.data || []);
+      setCustomers(list);
+    } catch (err) {
+      setCustomerError(err.message || 'Failed to load customer ticket purchases');
+    } finally {
+      setLoadingCustomers(false);
     }
   }
 
@@ -245,23 +277,164 @@ export default function EventList() {
       </div>
 
       {/* Filter Bar */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', gap: 8 }}>
-          {['all', 'published', 'draft', 'archived'].map(status => (
+          {(isSuperAdmin ? ['all', 'published', 'draft', 'archived', 'customers'] : ['all', 'published', 'draft', 'archived']).map(status => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
               className={`btn btn-sm ${statusFilter === status ? 'btn-primary' : 'btn-secondary'}`}
               style={{ textTransform: 'capitalize' }}
             >
-              {status}
+              {status === 'customers' ? 'Customers' : status}
             </button>
           ))}
         </div>
+
+        {/* Search input */}
+        <div style={{ position: 'relative', width: 280 }}>
+          <RiSearchLine size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <input
+            type="text"
+            placeholder={statusFilter === 'customers' ? "Search name, email, event..." : "Search events..."}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="input"
+            style={{ paddingLeft: 36, height: 36, fontSize: 13, width: '100%' }}
+          />
+        </div>
       </div>
 
-      {/* Loading state */}
-      {loading ? (
+      {/* CUSTOMERS TAB VIEW */}
+      {statusFilter === 'customers' ? (
+        loadingCustomers ? (
+          <div className="card" style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>
+            <span style={{ display: 'inline-block', width: 28, height: 28, border: '3px solid #e5e7eb', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <p style={{ marginTop: 12 }}>Loading customer purchases…</p>
+          </div>
+        ) : customerError ? (
+          <div className="card" style={{ padding: 24, background: '#fef2f2', borderColor: '#fca5a5', color: '#991b1b' }}>
+            <p>Error: {customerError}</p>
+            <button onClick={loadCustomers} className="btn btn-sm btn-secondary" style={{ marginTop: 12 }}>
+              Retry
+            </button>
+          </div>
+        ) : (
+          <div className="table-container">
+            <div style={{ padding: '12px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#475569' }}>
+                Total Purchased Tickets: {customers.filter(c => {
+                  const q = (search || '').toLowerCase().trim();
+                  if (!q) return true;
+                  return (
+                    (c.fullName || '').toLowerCase().includes(q) ||
+                    (c.email || '').toLowerCase().includes(q) ||
+                    (c.eventName || '').toLowerCase().includes(q) ||
+                    (c.userRole || '').toLowerCase().includes(q) ||
+                    (c.ticketCode || '').toLowerCase().includes(q)
+                  );
+                }).length}
+              </span>
+              <button
+                onClick={loadCustomers}
+                className="btn btn-sm btn-secondary"
+                style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}
+              >
+                <RiRefreshLine size={14} /> Refresh List
+              </button>
+            </div>
+
+            {customers.filter(c => {
+              const q = (search || '').toLowerCase().trim();
+              if (!q) return true;
+              return (
+                (c.fullName || '').toLowerCase().includes(q) ||
+                (c.email || '').toLowerCase().includes(q) ||
+                (c.eventName || '').toLowerCase().includes(q) ||
+                (c.userRole || '').toLowerCase().includes(q) ||
+                (c.ticketCode || '').toLowerCase().includes(q)
+              );
+            }).length === 0 ? (
+              <div style={{ padding: 48, textAlign: 'center', color: '#6b7280' }}>
+                <RiUserLine size={48} style={{ margin: '0 auto 12px', opacity: 0.4, color: '#6366f1' }} />
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: '#374151' }}>No Customer Purchases Found</h3>
+                <p style={{ fontSize: 14, color: '#6b7280', marginTop: 4 }}>
+                  {search ? 'No tickets match your search query.' : 'No users have completed ticket purchases yet.'}
+                </p>
+              </div>
+            ) : (
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Customer Name</th>
+                    <th>Email Address</th>
+                    <th>Event Name</th>
+                    <th>User Role</th>
+                    <th>Purchase Date & Time</th>
+                    <th>Payment Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {customers
+                    .filter(c => {
+                      const q = (search || '').toLowerCase().trim();
+                      if (!q) return true;
+                      return (
+                        (c.fullName || '').toLowerCase().includes(q) ||
+                        (c.email || '').toLowerCase().includes(q) ||
+                        (c.eventName || '').toLowerCase().includes(q) ||
+                        (c.userRole || '').toLowerCase().includes(q) ||
+                        (c.ticketCode || '').toLowerCase().includes(q)
+                      );
+                    })
+                    .map(c => (
+                      <tr key={c.id}>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
+                              {(c.fullName || 'A').charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 14 }}>{c.fullName}</div>
+                              <div style={{ fontSize: 11, color: '#64748b', fontFamily: 'monospace' }}>{c.ticketCode}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#334155', fontSize: 13 }}>
+                            <RiMailLine size={14} style={{ color: '#94a3b8' }} />
+                            <span>{c.email}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="badge badge-indigo" style={{ fontWeight: 600 }}>
+                            {c.eventName}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="badge badge-purple" style={{ textTransform: 'uppercase', fontSize: 11, fontWeight: 700 }}>
+                            {c.userRole}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: 13, color: '#475569' }}>
+                          {c.purchaseDate ? new Date(c.purchaseDate).toLocaleString('en-IN', {
+                            day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                          }) : 'N/A'}
+                        </td>
+                        <td>
+                          <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 700 }}>
+                            <RiCheckLine size={13} />
+                            {c.paymentStatus}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )
+      ) : loading ? (
         <div className="card" style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>
           <span style={{ display: 'inline-block', width: 28, height: 28, border: '3px solid #e5e7eb', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
           <p style={{ marginTop: 12 }}>Loading events…</p>
