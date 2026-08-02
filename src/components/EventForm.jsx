@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   RiSaveLine, RiArrowLeftLine, RiArrowDownSLine, RiArrowUpSLine,
   RiImageAddLine, RiMagicLine, RiSeoLine, RiInformationLine, RiMapPinLine, RiTicketLine,
-  RiUserStarLine, RiAddLine, RiDeleteBinLine
+  RiUserStarLine, RiAddLine, RiDeleteBinLine, RiCloseLine, RiCheckLine
 } from 'react-icons/ri';
 
 const DEFAULT_ROLE_PRICING = {
@@ -44,10 +44,55 @@ const ROLES = [
 ];
 
 export default function EventForm({ initialData = {}, onSubmit, saving, errorMsg, successMsg, isEdit = false }) {
-  // Primary Fields
   const [title, setTitle] = useState(initialData.title || '');
   const [description, setDescription] = useState(initialData.description || '');
-  const [bannerUrl, setBannerUrl] = useState(initialData.banner_url || initialData.bannerUrl || initialData.poster_url || initialData.posterUrl || '');
+
+  // Banner Image handling (Upload vs URL)
+  const initialBanner = initialData.banner_url || initialData.bannerUrl || initialData.poster_url || initialData.posterUrl || '';
+  const isInitialUpload = initialBanner.startsWith('data:') || initialBanner.startsWith('blob:');
+  const [uploadedImage, setUploadedImage] = useState(isInitialUpload ? initialBanner : '');
+  const [fileName, setFileName] = useState(isInitialUpload ? 'Uploaded banner image' : '');
+  const [imageUrlInput, setImageUrlInput] = useState(!isInitialUpload ? initialBanner : '');
+
+  const hasUpload = Boolean(uploadedImage);
+  const hasUrl = Boolean(imageUrlInput.trim());
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file (PNG, JPG, WEBP, GIF)');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setUploadedImage(ev.target.result);
+      setFileName(file.name);
+      setImageUrlInput('');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearUploadedImage = () => {
+    setUploadedImage('');
+    setFileName('');
+  };
+
+  const handleImageUrlChange = (e) => {
+    const val = e.target.value;
+    setImageUrlInput(val);
+    if (val.trim()) {
+      setUploadedImage('');
+      setFileName('');
+    }
+  };
+
+  const handleClearImageUrl = () => {
+    setImageUrlInput('');
+  };
+
   const [organizer, setOrganizer] = useState(initialData.organizer || '');
   const [venueType, setVenueType] = useState(initialData.venue_type || initialData.venueType || 'hybrid');
   const [eventType, setEventType] = useState(initialData.event_type || initialData.eventType || 'event_with_subscription');
@@ -135,6 +180,18 @@ export default function EventForm({ initialData = {}, onSubmit, saving, errorMsg
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
+
+    // Validate Banner Upload / Image URL - must provide only one
+    const bannerUrl = uploadedImage || imageUrlInput.trim();
+    if (!bannerUrl) {
+      alert('Please upload a banner image or enter an image URL.');
+      return;
+    }
+
+    if (uploadedImage && imageUrlInput.trim()) {
+      alert('Please provide either an uploaded image or an image URL, not both.');
+      return;
+    }
 
     // Convert newline-separated highlights text into clean array
     const parsedHighlights = highlightsText
@@ -238,26 +295,116 @@ export default function EventForm({ initialData = {}, onSubmit, saving, errorMsg
             />
           </div>
 
-          {/* Banner Image URL */}
+          {/* Banner Upload / Image URL Field */}
           <div className="form-group form-full">
             <label className="form-label">Banner Upload / Image URL <span className="required">*</span></label>
-            <input
-              type="url"
-              className="form-input"
-              required
-              value={bannerUrl}
-              onChange={e => setBannerUrl(e.target.value)}
-              placeholder="https://images.unsplash.com/photo-... or Supabase URL"
-            />
-            {bannerUrl && (
-              <img
-                src={bannerUrl}
-                alt="Banner Preview"
-                className="cover-preview"
-                style={{ maxHeight: 160, marginTop: 8 }}
-                onError={e => e.target.style.display = 'none'}
-              />
-            )}
+            <div className="banner-input-container">
+              {/* Option 1: Upload Image */}
+              <div className={`banner-upload-box ${hasUrl ? 'banner-box-disabled' : ''}`}>
+                {!hasUpload ? (
+                  <label className={`banner-file-dropzone ${hasUrl ? 'dropzone-disabled' : ''}`}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={hasUrl}
+                      style={{ display: 'none' }}
+                    />
+                    <div className="dropzone-content">
+                      <RiImageAddLine size={28} className="dropzone-icon" />
+                      <div className="dropzone-text-group">
+                        <span className="dropzone-title">
+                          {hasUrl ? 'Upload disabled (Image URL is active)' : 'Click to Upload Banner Image'}
+                        </span>
+                        <span className="dropzone-subtitle">
+                          {hasUrl ? 'Clear the Image URL field below to upload an image file' : 'PNG, JPG, WEBP, or GIF (Max 5MB)'}
+                        </span>
+                      </div>
+                    </div>
+                  </label>
+                ) : (
+                  <div className="banner-preview-card">
+                    <div className="banner-preview-wrapper">
+                      <img src={uploadedImage} alt="Uploaded Banner Preview" className="cover-preview" />
+                      <div className="banner-preview-overlay">
+                        <span className="banner-file-name">{fileName || 'Uploaded Image'}</span>
+                        <button
+                          type="button"
+                          className="banner-remove-btn"
+                          onClick={handleClearUploadedImage}
+                          title="Remove uploaded image"
+                        >
+                          <RiDeleteBinLine size={16} /> Remove Image
+                        </button>
+                      </div>
+                    </div>
+                    <div className="banner-status-badge">
+                      <RiCheckLine size={14} /> Image Uploaded &amp; Selected
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* OR Separator */}
+              <div className="banner-or-divider">
+                <span className="banner-or-line"></span>
+                <span className="banner-or-badge">OR</span>
+                <span className="banner-or-line"></span>
+              </div>
+
+              {/* Option 2: Image URL Input */}
+              <div className={`banner-url-box ${hasUpload ? 'banner-box-disabled' : ''}`}>
+                <div className="url-input-wrapper">
+                  <input
+                    type="url"
+                    className="form-input"
+                    value={imageUrlInput}
+                    onChange={handleImageUrlChange}
+                    disabled={hasUpload}
+                    placeholder={
+                      hasUpload
+                        ? "Disabled — Clear uploaded image above to enter an Image URL"
+                        : "https://images.unsplash.com/photo-... or Supabase URL"
+                    }
+                  />
+                  {hasUrl && !hasUpload && (
+                    <button
+                      type="button"
+                      className="url-clear-btn"
+                      onClick={handleClearImageUrl}
+                      title="Clear Image URL"
+                    >
+                      <RiCloseLine size={18} />
+                    </button>
+                  )}
+                </div>
+
+                {hasUrl && !hasUpload && (
+                  <div className="banner-preview-wrapper" style={{ marginTop: 8 }}>
+                    <img
+                      src={imageUrlInput}
+                      alt="Banner URL Preview"
+                      className="cover-preview"
+                      onError={e => e.target.style.display = 'none'}
+                    />
+                    <div className="banner-status-badge" style={{ padding: '4px 8px' }}>
+                      <RiCheckLine size={14} /> Image URL Active
+                    </div>
+                  </div>
+                )}
+
+                {hasUpload && (
+                  <span className="banner-helper-text">
+                    Image URL field is disabled because an image file has been uploaded above.
+                  </span>
+                )}
+                {hasUrl && (
+                  <span className="banner-helper-text">
+                    Upload Image option is disabled because an Image URL is entered above.
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Organizer */}

@@ -743,6 +743,216 @@ html, body, #root {
   border: 1px solid var(--color-border);
 }
 
+/* ── Banner Upload / Image URL Dual Option ── */
+.banner-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius, 10px);
+  padding: 16px;
+  margin-top: 6px;
+}
+
+.banner-upload-box {
+  transition: opacity 0.2s ease;
+}
+
+.banner-file-dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--color-border, #cbd5e1);
+  border-radius: var(--radius, 8px);
+  padding: 20px 16px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--color-bg, #f8fafc);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.banner-file-dropzone:hover:not(.dropzone-disabled) {
+  border-color: var(--color-primary, #4f46e5);
+  background: rgba(79, 70, 229, 0.04);
+}
+
+.banner-file-dropzone.dropzone-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(0, 0, 0, 0.02);
+  border-style: solid;
+  border-color: var(--color-border, #e2e8f0);
+}
+
+.dropzone-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.dropzone-icon {
+  color: var(--color-primary, #4f46e5);
+  flex-shrink: 0;
+}
+
+.dropzone-disabled .dropzone-icon {
+  color: var(--color-text-secondary, #94a3b8);
+}
+
+.dropzone-text-group {
+  text-align: left;
+}
+
+.dropzone-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+}
+
+.dropzone-subtitle {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-secondary, #64748b);
+  margin-top: 2px;
+}
+
+/* OR Separator */
+.banner-or-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 2px 0;
+}
+
+.banner-or-line {
+  flex: 1;
+  height: 1px;
+  background: var(--color-border, #e2e8f0);
+}
+
+.banner-or-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary, #64748b);
+  background: var(--color-bg, #f1f5f9);
+  padding: 3px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  text-transform: uppercase;
+}
+
+/* URL Input Box & Preview */
+.banner-url-box {
+  transition: opacity 0.2s ease;
+}
+
+.url-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.url-clear-btn {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.15s, background 0.15s;
+}
+
+.url-clear-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.banner-box-disabled {
+  opacity: 0.55;
+}
+
+.banner-helper-text {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-secondary, #64748b);
+  margin-top: 6px;
+  font-style: italic;
+}
+
+.banner-preview-wrapper {
+  position: relative;
+  border-radius: var(--radius, 8px);
+  overflow: hidden;
+  border: 1px solid var(--color-border, #e2e8f0);
+  margin-top: 6px;
+}
+
+.banner-preview-wrapper .cover-preview {
+  margin-top: 0;
+  display: block;
+}
+
+.banner-preview-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 12px;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #ffffff;
+}
+
+.banner-file-name {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 65%;
+}
+
+.banner-remove-btn {
+  background: rgba(239, 68, 68, 0.9);
+  color: #ffffff;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.15s;
+}
+
+.banner-remove-btn:hover {
+  background: #dc2626;
+}
+
+.banner-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #10b981;
+  margin-top: 6px;
+}
+
 .radio-group { display: flex; gap: 12px; margin-top: 4px; flex-wrap: wrap; }
 .radio-label {
   display: flex;
