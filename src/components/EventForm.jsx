@@ -47,6 +47,70 @@ export default function EventForm({ initialData = {}, onSubmit, saving, errorMsg
   const [title, setTitle] = useState(initialData.title || '');
   const [description, setDescription] = useState(initialData.description || '');
 
+  // Event Cover Image handling (Thumbnail for listing cards)
+  const initialCover = initialData.cover_image_url || initialData.coverImageUrl || '';
+  const [coverImageUrl, setCoverImageUrl] = useState(initialCover);
+  const [coverFileName, setCoverFileName] = useState(initialCover ? 'Cover Image' : '');
+
+  const handleCoverUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file (PNG, JPG, WEBP, GIF)');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const targetWidth = 1080;
+        const targetHeight = 1440;
+        const targetAspect = targetWidth / targetHeight; // 3:4 aspect ratio (1080x1440)
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d');
+
+        const imgAspect = img.width / img.height;
+        let renderWidth, renderHeight, offsetX, offsetY;
+
+        if (imgAspect > targetAspect) {
+          // Crop sides (wider than 3:4)
+          renderHeight = img.height;
+          renderWidth = img.height * targetAspect;
+          offsetX = (img.width - renderWidth) / 2;
+          offsetY = 0;
+        } else {
+          // Crop top/bottom (taller than 3:4)
+          renderWidth = img.width;
+          renderHeight = img.width / targetAspect;
+          offsetX = 0;
+          offsetY = (img.height - renderHeight) / 2;
+        }
+
+        ctx.drawImage(
+          img,
+          offsetX, offsetY, renderWidth, renderHeight,
+          0, 0, targetWidth, targetHeight
+        );
+
+        const processedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        setCoverImageUrl(processedDataUrl);
+        setCoverFileName(file.name);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearCoverImage = () => {
+    setCoverImageUrl('');
+    setCoverFileName('');
+  };
+
   // Banner Image handling (Upload vs URL)
   const initialBanner = initialData.banner_url || initialData.bannerUrl || initialData.poster_url || initialData.posterUrl || '';
   const isInitialUpload = initialBanner.startsWith('data:') || initialBanner.startsWith('blob:');
@@ -222,6 +286,7 @@ export default function EventForm({ initialData = {}, onSubmit, saving, errorMsg
       title,
       description,
       subtitle: description ? description.slice(0, 120) : title,
+      coverImageUrl,
       bannerUrl,
       posterUrl: bannerUrl,
       organizer: organizer || 'EVOA',
@@ -293,6 +358,63 @@ export default function EventForm({ initialData = {}, onSubmit, saving, errorMsg
               onChange={e => setDescription(e.target.value)}
               placeholder="Provide a quick summary of what the event is about…"
             />
+          </div>
+
+          {/* Event Cover Image Upload (Thumbnail for Event Listing Cards) */}
+          <div className="form-group form-full">
+            <label className="form-label">
+              Event Cover Image Upload <span className="muted" style={{ fontWeight: 400, textTransform: 'none', fontSize: 12, color: 'var(--color-text-secondary)' }}>(For Event Cards on User Portal)</span>
+            </label>
+            
+            {!coverImageUrl ? (
+              <label className="banner-file-dropzone">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCoverUpload}
+                  style={{ display: 'none' }}
+                />
+                <div className="dropzone-content">
+                  <RiImageAddLine size={28} className="dropzone-icon" />
+                  <div className="dropzone-text-group">
+                    <span className="dropzone-title">Click to Upload Event Cover Image</span>
+                    <span className="dropzone-subtitle">Recommended size: <strong>1080 × 1440 px (3:4 ratio)</strong> • Auto-cropped for uniform cards</span>
+                  </div>
+                </div>
+              </label>
+            ) : (
+              <div className="banner-preview-card" style={{ maxWidth: 220 }}>
+                <div className="banner-preview-wrapper" style={{ aspectRatio: '3/4', maxHeight: 280, borderRadius: 10, overflow: 'hidden' }}>
+                  <img src={coverImageUrl} alt="Event Cover Preview (3:4)" className="cover-preview" style={{ width: '100%', height: '100%', objectFit: 'cover', marginTop: 0 }} />
+                  <div className="banner-preview-overlay">
+                    <span className="banner-file-name">{coverFileName || 'Cover Image'}</span>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <label className="banner-remove-btn" style={{ background: 'rgba(79, 70, 229, 0.9)', cursor: 'pointer', margin: 0, padding: '4px 8px', fontSize: 11 }}>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleCoverUpload}
+                          style={{ display: 'none' }}
+                        />
+                        Replace
+                      </label>
+                      <button
+                        type="button"
+                        className="banner-remove-btn"
+                        onClick={handleClearCoverImage}
+                        title="Remove cover image"
+                        style={{ padding: '4px 8px', fontSize: 11 }}
+                      >
+                        <RiDeleteBinLine size={14} /> Clear
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="banner-status-badge" style={{ marginTop: 8 }}>
+                  <RiCheckLine size={14} /> 3:4 Image Ready (1080×1440)
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Banner Upload / Image URL Field */}
