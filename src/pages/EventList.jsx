@@ -58,8 +58,6 @@ export default function EventList() {
   useEffect(() => {
     if (statusFilter === 'customers' && isSuperAdmin) {
       loadCustomers();
-      const interval = setInterval(loadCustomers, 15000); // Auto update customer list
-      return () => clearInterval(interval);
     }
   }, [statusFilter, isSuperAdmin]);
 
@@ -307,12 +305,12 @@ export default function EventList() {
 
       {/* CUSTOMERS TAB VIEW */}
       {statusFilter === 'customers' ? (
-        loadingCustomers ? (
+        loadingCustomers && customers.length === 0 ? (
           <div className="card" style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>
             <span style={{ display: 'inline-block', width: 28, height: 28, border: '3px solid #e5e7eb', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             <p style={{ marginTop: 12 }}>Loading customer purchases…</p>
           </div>
-        ) : customerError ? (
+        ) : customerError && customers.length === 0 ? (
           <div className="card" style={{ padding: 24, background: '#fef2f2', borderColor: '#fca5a5', color: '#991b1b' }}>
             <p>Error: {customerError}</p>
             <button onClick={loadCustomers} className="btn btn-sm btn-secondary" style={{ marginTop: 12 }}>
@@ -337,10 +335,12 @@ export default function EventList() {
               </span>
               <button
                 onClick={loadCustomers}
+                disabled={loadingCustomers}
                 className="btn btn-sm btn-secondary"
-                style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, opacity: loadingCustomers ? 0.7 : 1 }}
               >
-                <RiRefreshLine size={14} /> Refresh List
+                <RiRefreshLine size={14} style={{ animation: loadingCustomers ? 'spin 0.8s linear infinite' : 'none' }} />
+                {loadingCustomers ? 'Refreshing...' : 'Refresh List'}
               </button>
             </div>
 
